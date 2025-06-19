@@ -1,84 +1,119 @@
 // olc3DEngine.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
+#include <algorithm>
+#include <fstream>
 #include <iostream>
+#include <strstream>
+#include <vector>
 #define OLC_PGE_APPLICATION
 
 //#include "olcConsoleGameEngine.h"
 #include "olcPixelGameEngine.h"
+#include "vec3.h"
+#include "constants.h"
+#include "Triangle.h"
 
 using namespace std;
 using namespace olc;
 
-struct vec3d
-{
-  float x, y, z;
-};
-
-struct triangle
-{
-  vec3d p[3];
-};
-
 struct mesh
 {
-  vector<triangle> tris;
+  vector<Triangle> tris;
+
+  bool LoadFromObjectFile(const std::string& fileName)
+  {
+    ifstream file(fileName);
+    if (!file.is_open())
+      return false;
+
+    // Local cache of vertices
+    vector<vec3> vertices;
+
+    while (!file.eof())
+    {
+      char line[128];
+      file.getline(line, 128);
+
+      strstream s;
+      s << line;
+      char junk; // First character of each line, being '#', 'v' or 'f'
+
+      // Reading vertices
+      if (line[0] == 'v')
+      {
+        double x, y, z;
+        s >> junk >> x >> y >> z;
+        vec3 vertex{ x, y, z };
+        vertices.push_back(vertex);
+      }
+      else if (line[0] == 'f')
+      {
+        int f[3];
+        s >> junk >> f[0] >> f[1] >> f[2];
+        tris.push_back({ vertices[f[0] - 1], vertices[f[1] - 1], vertices[f[2] - 1] });
+      }
+    }
+
+    return true;
+  }
 };
 
 struct mat4x4
 {
-  float m[4][4] = { 0.f };
+  double m[4][4] = { 0. };
 };
 
 class olcEngine3D : public PixelGameEngine
 {
 public:
-  olcEngine3D() 
+  olcEngine3D()
   {
     sAppName = "3D Demo";
   }
 
   bool OnUserCreate() override
   {
-    meshCube.tris = {
-      // SOUTH
-      { 0.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 0.0f },
-      { 0.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 0.0f, 0.0f },
+    meshCube.LoadFromObjectFile("VideoShip.obj");
+    //meshCube.tris = {
+    //  // SOUTH
+    //  { vec3(0.0, 0.0, 0.0),    vec3(0.0, 1.0, 0.0),    vec3(1.0, 1.0, 0.0) },
+    //  { vec3(0.0, 0.0, 0.0),    vec3(1.0, 1.0, 0.0),    vec3(1.0, 0.0, 0.0)},
 
-      // EAST                                                      
-      { 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f },
-      { 1.0f, 0.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 1.0f },
+    //  // EAST                                                      
+    //  { vec3(1.0, 0.0, 0.0),    vec3(1.0, 1.0, 0.0),    vec3(1.0, 1.0, 1.0)},
+    //  { vec3(1.0, 0.0, 0.0),    vec3(1.0, 1.0, 1.0),    vec3(1.0, 0.0, 1.0)},
 
-      // NORTH                                                     
-      { 1.0f, 0.0f, 1.0f,    1.0f, 1.0f, 1.0f,    0.0f, 1.0f, 1.0f },
-      { 1.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 0.0f, 1.0f },
+    //  // NORTH                                                     
+    //  { vec3(1.0, 0.0, 1.0),    vec3(1.0, 1.0, 1.0),    vec3(0.0, 1.0, 1.0)},
+    //  { vec3(1.0, 0.0, 1.0),    vec3(0.0, 1.0, 1.0),    vec3(0.0, 0.0, 1.0)},
 
-      // WEST                                                      
-      { 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 1.0f,    0.0f, 1.0f, 0.0f },
-      { 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 0.0f,    0.0f, 0.0f, 0.0f },
+    //  // WEST                                                      
+    //  { vec3(0.0, 0.0, 1.0),    vec3(0.0, 1.0, 1.0),    vec3(0.0, 1.0, 0.0)},
+    //  { vec3(0.0, 0.0, 1.0),    vec3(0.0, 1.0, 0.0),    vec3(0.0, 0.0, 0.0)},
 
-      // TOP                                                       
-      { 0.0f, 1.0f, 0.0f,    0.0f, 1.0f, 1.0f,    1.0f, 1.0f, 1.0f },
-      { 0.0f, 1.0f, 0.0f,    1.0f, 1.0f, 1.0f,    1.0f, 1.0f, 0.0f },
+    //  // TOP                                                       
+    //  { vec3(0.0, 1.0, 0.0),    vec3(0.0, 1.0, 1.0),    vec3(1.0, 1.0, 1.0)},
+    //  { vec3(0.0, 1.0, 0.0),    vec3(1.0, 1.0, 1.0),    vec3(1.0, 1.0, 0.0)},
 
-      // BOTTOM                                                    
-      { 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f },
-      { 1.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f,    1.0f, 0.0f, 0.0f },
-    };
+    //  // BOTTOM                                                    
+    //  { vec3(1.0, 0.0, 1.0),    vec3(0.0, 0.0, 1.0),    vec3(0.0, 0.0, 0.0)},
+    //  { vec3(1.0, 0.0, 1.0),    vec3(0.0, 0.0, 0.0),    vec3(1.0, 0.0, 0.0)},
+    //};
 
     // Projection matrix
-    float zNear{ 0.1f };
-    float zFar{ 1000.f };
-    float fov{ 90.f };
-    float aspectRatio = (float)ScreenHeight() / (float)ScreenWidth();
-    float fovRad = 1.f / tanf(fov * 0.5f * 3.14159f / 180.f);
+    double zNear{ 0.1 };
+    double zFar{ 1000. };
+    double fov{ 90. };
+    double aspectRatio = (double)ScreenHeight() / (double)ScreenWidth();
+    double fovRad = 1.f / tan(0.5 * degrees_to_radians(fov));
 
     projectionMatrix.m[0][0] = aspectRatio * fovRad;
     projectionMatrix.m[1][1] = fovRad;
     projectionMatrix.m[2][2] = zFar / (zFar - zNear);
     projectionMatrix.m[3][2] = (-zFar * zNear) / (zFar - zNear);
-    projectionMatrix.m[2][3] = 1.f;
-    projectionMatrix.m[3][3] = 0.f;
+    projectionMatrix.m[2][3] = 1.;
+    projectionMatrix.m[3][3] = 0.;
 
     return true;
   }
@@ -86,34 +121,91 @@ public:
   bool OnUserUpdate(float elapsedTime) override
   {
     FillRect(0, 0, ScreenWidth(), ScreenHeight(), olc::BLACK);
+
+    mat4x4 zRotation, xRotation;
+    theta_ += 1. * (double)elapsedTime;
+
+    // Rotation Z
+    zRotation.m[0][0] = cos(theta_);
+    zRotation.m[0][1] = sin(theta_);
+    zRotation.m[1][0] = -sin(theta_);
+    zRotation.m[1][1] = cos(theta_);
+    zRotation.m[2][2] = 1.f;
+    zRotation.m[3][3] = 1.f;
+
+    // Rotation X
+    xRotation.m[0][0] = 1.f;
+    xRotation.m[1][1] = cos(theta_ * 0.5f);
+    xRotation.m[1][2] = sin(theta_ * 0.5f);
+    xRotation.m[2][1] = -sin(theta_ * 0.5f);
+    xRotation.m[2][2] = cos(theta_ * 0.5f);
+    xRotation.m[3][3] = 1.f;
+
+    vector<Triangle> trianglesToRaster;
+
     // Draw triangles
     for (const auto& tri : meshCube.tris)
     {
-      triangle projectedTriangle;
-      MultiplyMatrixVector(tri.p[0], projectionMatrix, projectedTriangle.p[0]);
-      MultiplyMatrixVector(tri.p[1], projectionMatrix, projectedTriangle.p[1]);
-      MultiplyMatrixVector(tri.p[2], projectionMatrix, projectedTriangle.p[2]);
+      // Rotation around Z-axis
+      Triangle zRotatedTriangle{ MultiplyMatrixVector(tri.P0(), zRotation),
+        MultiplyMatrixVector(tri.P1(), zRotation),
+        MultiplyMatrixVector(tri.P2(), zRotation) };
 
-      // Scale into view
-      projectedTriangle.p[0].x += 1.f;
-      projectedTriangle.p[0].y += 1.f;
-      projectedTriangle.p[1].x += 1.f;
-      projectedTriangle.p[1].y += 1.f;
-      projectedTriangle.p[2].x += 1.f;
-      projectedTriangle.p[2].y += 1.f;
+      // Rotation around X-axis
+      Triangle xRotatedTriangle{ MultiplyMatrixVector(zRotatedTriangle.P0(), xRotation),
+        MultiplyMatrixVector(zRotatedTriangle.P1(), xRotation),
+        MultiplyMatrixVector(zRotatedTriangle.P2(), xRotation)};
 
-      projectedTriangle.p[0].x *= 0.5f * (float)ScreenWidth();
-      projectedTriangle.p[0].y *= 0.5f * (float)ScreenHeight();
-      projectedTriangle.p[1].x *= 0.5f * (float)ScreenWidth();
-      projectedTriangle.p[1].y *= 0.5f * (float)ScreenHeight();
-      projectedTriangle.p[2].x *= 0.5f * (float)ScreenWidth();
-      projectedTriangle.p[2].y *= 0.5f * (float)ScreenHeight();
+      // Translation - Offset into the screen
+      Triangle translatedTriangle{ xRotatedTriangle };
+      translatedTriangle.Translate(vec3(0., 0., 8.));
 
-      DrawTriangle(projectedTriangle.p[0].x, projectedTriangle.p[0].y,
-        projectedTriangle.p[1].x, projectedTriangle.p[1].y,
-        projectedTriangle.p[2].x, projectedTriangle.p[2].y,
-        olc::WHITE);
-        //PIXEL_SOLID, FG_WHITE);
+      vec3 normal{ translatedTriangle.GetNormal() };
+
+      //if (normal.z() < 0.)
+      if ((translatedTriangle.P0() - camera_).DotProduct(normal) < 0.)
+      {
+        // Illumination
+        vec3 lightDirection{ 0., 0., -1 };
+        lightDirection.Normalize();
+        double dp{ lightDirection.DotProduct(normal) };
+        Pixel color{ WHITE };
+        color.r *= dp;
+        color.g *= dp;
+        color.b *= dp;
+
+        // Project triangle from 3D --> 2D
+        Triangle projectedTriangle{ MultiplyMatrixVector(translatedTriangle.P0(), projectionMatrix),
+          MultiplyMatrixVector(translatedTriangle.P1(), projectionMatrix),
+          MultiplyMatrixVector(translatedTriangle.P2(), projectionMatrix)};
+
+        // Scale into view
+        vec3 move{ 1., 1., 0. };
+        projectedTriangle.Translate(move);
+
+        vec3 scale{ 0.5 * (double)ScreenWidth(), 0.5 * (double)ScreenHeight(), 1. };
+        projectedTriangle.Scale(scale);
+
+        projectedTriangle.SetFillColor(color);
+
+        trianglesToRaster.push_back(projectedTriangle);
+      }
+    }
+
+    // Sort triangles from back to front (painter algorithm)
+    sort(begin(trianglesToRaster), end(trianglesToRaster),
+      [](const Triangle& t1, const Triangle& t2) {
+        // Compare mid-points (x3)
+        double z1{ t1.P0().z() + t1.P1().z() + t1.P2().z() };
+        double z2{ t2.P0().z() + t2.P1().z() + t2.P2().z() };
+        return z2 < z1;
+      });
+
+    for (const auto& triangle : trianglesToRaster)
+    {
+      triangle.Fill(this);
+      // For debug
+      //triangle.Draw(this);
     }
 
     return true;
@@ -122,19 +214,22 @@ public:
 private:
   mesh meshCube;
   mat4x4 projectionMatrix;
+  double theta_{ 0. };
+  vec3 camera_{ 0., 0., 0. };
 
-  void MultiplyMatrixVector(const vec3d& input, const mat4x4& projectionMatrix, vec3d& output)
+  vec3 MultiplyMatrixVector(const vec3& input, const mat4x4& projectionMatrix)
   {
-    output.x = input.x * projectionMatrix.m[0][0] + input.y * projectionMatrix.m[1][0] + input.z * projectionMatrix.m[2][0] + projectionMatrix.m[3][0];
-    output.y = input.x * projectionMatrix.m[0][1] + input.y * projectionMatrix.m[1][1] + input.z * projectionMatrix.m[2][1] + projectionMatrix.m[3][1];
-    output.z = input.x * projectionMatrix.m[0][2] + input.y * projectionMatrix.m[1][2] + input.z * projectionMatrix.m[2][2] + projectionMatrix.m[3][2];
-    float w = input.x * projectionMatrix.m[0][3] + input.y * projectionMatrix.m[1][3] + input.z * projectionMatrix.m[2][3] + projectionMatrix.m[3][3];
-    if (w != 0.f)
+    double x = input.x() * projectionMatrix.m[0][0] + input.y() * projectionMatrix.m[1][0] + input.z() * projectionMatrix.m[2][0] + projectionMatrix.m[3][0];
+    double y = input.x() * projectionMatrix.m[0][1] + input.y() * projectionMatrix.m[1][1] + input.z() * projectionMatrix.m[2][1] + projectionMatrix.m[3][1];
+    double z = input.x() * projectionMatrix.m[0][2] + input.y() * projectionMatrix.m[1][2] + input.z() * projectionMatrix.m[2][2] + projectionMatrix.m[3][2];
+    double w = input.x() * projectionMatrix.m[0][3] + input.y() * projectionMatrix.m[1][3] + input.z() * projectionMatrix.m[2][3] + projectionMatrix.m[3][3];
+    if (w != 0.)
     {
-      output.x /= w;
-      output.y /= w;
-      output.z /= w;
+      x /= w;
+      y /= w;
+      z /= w;
     }
+    return vec3(x, y, z);
   }
 };
 
@@ -144,16 +239,6 @@ int main()
   if (demo.Construct(256, 240, 2, 2))
     demo.Start();
 
-    std::cout << "Hello World!\n";
+  std::cout << "Hello World!\n";
 }
 
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
-
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file
